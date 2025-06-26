@@ -2,14 +2,24 @@ const express = require('express');
 const axios = require('axios');
 const router = express.Router();
 
-// LawNet OAuth configuration
-const LAWNET_CONFIG = {
-  clientId: process.env.LAWNET_CLIENT_ID,
-  clientSecret: process.env.LAWNET_CLIENT_SECRET,
-  redirectUri: process.env.LAWNET_REDIRECT_URI,
-  tokenUrl: process.env.LAWNET_TOKEN_URL || 'https://auth.lawnet.sg/oauth/token',
-  userInfoUrl: process.env.LAWNET_USER_INFO_URL || 'https://api.lawnet.sg/user/info'
-};
+// Import config helper
+const configRoute = require('./config');
+
+/**
+ * Get LawNet configuration with fallback
+ */
+function getLawNetConfig() {
+  // Try to get from dynamic config first, then fallback to environment variables
+  const config = configRoute.getConfig();
+  
+  return {
+    clientId: config.LAWNET_CLIENT_ID || process.env.LAWNET_CLIENT_ID,
+    clientSecret: config.LAWNET_CLIENT_SECRET || process.env.LAWNET_CLIENT_SECRET,
+    redirectUri: config.LAWNET_REDIRECT_URI || process.env.LAWNET_REDIRECT_URI,
+    tokenUrl: config.LAWNET_TOKEN_URL || process.env.LAWNET_TOKEN_URL || 'https://auth.lawnet.sg/oauth/token',
+    userInfoUrl: config.LAWNET_USER_INFO_URL || process.env.LAWNET_USER_INFO_URL || 'https://api.lawnet.sg/user/info'
+  };
+}
 
 /**
  * Exchange authorization code for access token
@@ -26,22 +36,26 @@ router.post('/token', async (req, res) => {
       });
     }
 
-    // Validate environment variables
-    if (!LAWNET_CONFIG.clientId || !LAWNET_CONFIG.clientSecret) {
+    // Get configuration from dynamic config or environment variables
+    const lawnetConfig = getLawNetConfig();
+    
+    if (!lawnetConfig.clientId || !lawnetConfig.clientSecret) {
       console.error('Missing LawNet OAuth credentials');
       return res.status(500).json({
-        error: 'Server configuration error',
-        message: 'OAuth credentials not configured'
+        error: 'Server configuration incomplete',
+        message: 'LawNet OAuth credentials not configured. Please configure via environment variables or dynamic configuration.'
       });
     }
 
+    console.log('Exchanging authorization code for access token...');
+
     // Exchange code for token
-    const tokenResponse = await axios.post(LAWNET_CONFIG.tokenUrl, {
+    const tokenResponse = await axios.post(lawnetConfig.tokenUrl, {
       grant_type: 'authorization_code',
-      client_id: LAWNET_CONFIG.clientId,
-      client_secret: LAWNET_CONFIG.clientSecret,
+      client_id: lawnetConfig.clientId,
+      client_secret: lawnetConfig.clientSecret,
       code: code,
-      redirect_uri: LAWNET_CONFIG.redirectUri
+      redirect_uri: lawnetConfig.redirectUri
     }, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -55,7 +69,7 @@ router.post('/token', async (req, res) => {
     // Get user information
     let userInfo = null;
     try {
-      const userResponse = await axios.get(LAWNET_CONFIG.userInfoUrl, {
+      const userResponse = await axios.get(lawnetConfig.userInfoUrl, {
         headers: {
           'Authorization': `${token_type} ${access_token}`,
           'Accept': 'application/json'
@@ -63,6 +77,7 @@ router.post('/token', async (req, res) => {
         timeout: 5000
       });
       userInfo = userResponse.data;
+      console.log('Successfully retrieved user information');
     } catch (userError) {
       console.warn('Failed to fetch user info:', userError.message);
       // Continue without user info - not critical
@@ -94,9 +109,16 @@ router.post('/token', async (req, res) => {
       if (status === 401) {
         return res.status(401).json({
           error: 'Authentication failed',
-          message: 'Invalid client credentials'
+          message: 'Invalid client credentials. Please check your LawNet OAuth configuration.'
         });
       }
+    }
+    
+    if (error.code === 'ECONNABORTED') {
+      return res.status(408).json({
+        error: 'Request timeout',
+        message: 'LawNet authentication service request timed out'
+      });
     }
     
     res.status(500).json({
@@ -121,10 +143,21 @@ router.post('/refresh', async (req, res) => {
       });
     }
 
-    const tokenResponse = await axios.post(LAWNET_CONFIG.tokenUrl, {
+    const lawnetConfig = getLawNetConfig();
+    
+    if (!lawnetConfig.clientId || !lawnetConfig.clientSecret) {
+      return res.status(500).json({
+        error: 'Server configuration incomplete',
+        message: 'LawNet OAuth credentials not configured'
+      });
+    }
+
+    console.log('Refreshing access token...');
+
+    const tokenResponse = await axios.post(lawnetConfig.tokenUrl, {
       grant_type: 'refresh_token',
-      client_id: LAWNET_CONFIG.clientId,
-      client_secret: LAWNET_CONFIG.clientSecret,
+      client_id: lawnetConfig.clientId,
+      client_secret: lawnetConfig.clientSecret,
       refresh_token: refreshToken
     }, {
       headers: {
@@ -147,7 +180,14 @@ router.post('/refresh', async (req, res) => {
   } catch (error) {
     console.error('Token refresh error:', error.response?.data || error.message);
     
-    res.status(401).json({
+    if (error.response?.status === 401) {
+      return res.status(401).json({
+        error: 'Invalid refresh token',
+        message: 'Refresh token is invalid or expired. Please re-authenticate.'
+      });
+    }
+    
+    res.status(500).json({
       error: 'Token refresh failed',
       message: 'Unable to refresh access token. Please re-authenticate.'
     });
@@ -169,8 +209,10 @@ router.post('/validate', async (req, res) => {
       });
     }
 
+    const lawnetConfig = getLawNetConfig();
+
     // Validate token by making a request to user info endpoint
-    const userResponse = await axios.get(LAWNET_CONFIG.userInfoUrl, {
+    const userResponse = await axios.get(lawnetConfig.userInfoUrl, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json'
@@ -186,10 +228,105 @@ router.post('/validate', async (req, res) => {
   } catch (error) {
     console.error('Token validation error:', error.response?.data || error.message);
     
-    res.status(401).json({
+    if (error.response?.status === 401) {
+      return res.status(401).json({
+        valid: false,
+        error: 'Invalid token',
+        message: 'Access token is invalid or expired'
+      });
+    }
+    
+    res.status(500).json({
       valid: false,
-      error: 'Invalid token',
-      message: 'Access token is invalid or expired'
+      error: 'Validation failed',
+      message: 'Unable to validate access token'
+    });
+  }
+});
+
+/**
+ * Get OAuth authorization URL
+ * GET /api/auth/url
+ */
+router.get('/url', (req, res) => {
+  try {
+    const lawnetConfig = getLawNetConfig();
+    
+    if (!lawnetConfig.clientId) {
+      return res.status(500).json({
+        error: 'Configuration incomplete',
+        message: 'LawNet Client ID not configured'
+      });
+    }
+
+    const authUrl = `https://auth.lawnet.sg/oauth/authorize?` +
+      `client_id=${encodeURIComponent(lawnetConfig.clientId)}&` +
+      `response_type=code&` +
+      `redirect_uri=${encodeURIComponent(lawnetConfig.redirectUri)}&` +
+      `scope=read`;
+
+    res.json({
+      success: true,
+      authUrl: authUrl,
+      clientId: lawnetConfig.clientId,
+      redirectUri: lawnetConfig.redirectUri
+    });
+
+  } catch (error) {
+    console.error('Auth URL generation error:', error);
+    res.status(500).json({
+      error: 'Failed to generate auth URL',
+      message: 'Unable to generate LawNet authorization URL'
+    });
+  }
+});
+
+/**
+ * Logout and revoke token
+ * POST /api/auth/logout
+ */
+router.post('/logout', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({
+        error: 'Missing token',
+        message: 'Access token is required for logout'
+      });
+    }
+
+    const lawnetConfig = getLawNetConfig();
+
+    // Attempt to revoke the token (if LawNet supports token revocation)
+    try {
+      await axios.post(`${lawnetConfig.tokenUrl}/revoke`, {
+        token: token,
+        client_id: lawnetConfig.clientId,
+        client_secret: lawnetConfig.clientSecret
+      }, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
+        },
+        timeout: 5000
+      });
+      console.log('Token successfully revoked');
+    } catch (revokeError) {
+      console.warn('Token revocation failed (may not be supported):', revokeError.message);
+      // Continue with logout even if revocation fails
+    }
+
+    res.json({
+      success: true,
+      message: 'Successfully logged out'
+    });
+
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      error: 'Logout failed',
+      message: 'Unable to complete logout process'
     });
   }
 });
