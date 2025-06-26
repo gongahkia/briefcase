@@ -4,10 +4,16 @@ import { extractTextFromPDF } from './utils/pdfParser';
 import { findCaseNames } from './utils/caseMatcher';
 import './styles.css';
 
-// Add this constant at the top - THIS IS THE KEY FIX
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-// Custom hook for localStorage with fallback
+// Available search sources
+const SEARCH_SOURCES = [
+  { id: 'lawnet', name: 'LawNet API', requiresAuth: true, description: 'Official LawNet database (requires API key)' },
+  { id: 'commonlii', name: 'CommonLII', requiresAuth: false, description: 'Free Singapore cases from 2006+' },
+  { id: 'singapore-courts', name: 'Singapore Courts', requiresAuth: false, description: 'Recent free judgments (last 3 months)' },
+  { id: 'ogp', name: 'OGP Pair Search', requiresAuth: false, description: 'Government Supreme Court judgments' }
+];
+
 function useLocalStorage(key, defaultValue) {
   const [value, setValue] = useState(() => {
     try {
@@ -33,41 +39,34 @@ function useLocalStorage(key, defaultValue) {
 
 function App() {
   const [cases, setCases] = useState([]);
-  const [lawnetResults, setLawnetResults] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedSource, setSelectedSource] = useLocalStorage('selected_source', 'commonlii');
   const [apiKey, setApiKey] = useLocalStorage('lawnet_api_key', '');
   const [serverConfig, setServerConfig] = useState(null);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [showApiDialog, setShowApiDialog] = useState(false);
+  const [showSourceDialog, setShowSourceDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [configFromStorage, setConfigFromStorage] = useLocalStorage('briefcase_config', {});
 
-  // Check server configuration on mount
   useEffect(() => {
     checkServerConfig();
   }, []);
 
-  // FIXED: Use absolute URL with proper error handling
   const checkServerConfig = async () => {
     try {
-      console.log('Checking server config at:', `${API_BASE_URL}/api/config/status`);
-      
       const response = await fetch(`${API_BASE_URL}/api/config/status`);
-      
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
       const configStatus = await response.json();
       setServerConfig(configStatus);
 
-      // If no configuration exists, check localStorage or prompt user
-      if (configStatus.configSource === 'none') {
+      if (configStatus.configSource === 'none' && selectedSource === 'lawnet') {
         if (Object.keys(configFromStorage).length > 0) {
-          // Try to use localStorage config
           await setServerConfigFromStorage();
         } else {
-          // Prompt user for configuration
           setShowConfigDialog(true);
         }
       }
@@ -77,7 +76,6 @@ function App() {
     }
   };
 
-  // FIXED: Use absolute URL
   const setServerConfigFromStorage = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/config/set`, {
@@ -90,7 +88,6 @@ function App() {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      console.log('✅ Configuration loaded from localStorage');
       await checkServerConfig();
     } catch (error) {
       console.error('Failed to set config from storage:', error);
@@ -98,7 +95,6 @@ function App() {
     }
   };
 
-  // FIXED: Use absolute URL with better error handling
   const handleConfigSubmit = async (config) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/config/set`, {
@@ -116,7 +112,6 @@ function App() {
       setShowConfigDialog(false);
       await checkServerConfig();
     } catch (error) {
-      console.error('Configuration submit error:', error);
       setError(`Configuration error: ${error.message}`);
     }
   };
@@ -133,10 +128,9 @@ function App() {
 
       const foundCases = findCaseNames(text);
       setCases(foundCases);
-      setLawnetResults([]);
+      setSearchResults([]);
 
     } catch (error) {
-      console.error('File processing error:', error);
       setError(`Processing error: ${error.message}`);
     } finally {
       setLoading(false);
@@ -152,9 +146,10 @@ function App() {
     maxFiles: 1
   });
 
-  // FIXED: Use absolute URL
-  const queryLawNet = async (caseName) => {
-    if (!apiKey) {
+  const searchCases = async (caseName) => {
+    const currentSource = SEARCH_SOURCES.find(s => s.id === selectedSource);
+    
+    if (currentSource.requiresAuth && !apiKey) {
       setShowApiDialog(true);
       return;
     }
@@ -163,14 +158,13 @@ function App() {
     setError('');
 
     try {
-      console.log('Querying LawNet at:', `${API_BASE_URL}/api/cases/search`);
-      
       const response = await fetch(`${API_BASE_URL}/api/cases/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: caseName,
-          apiKey: apiKey
+          source: selectedSource,
+          apiKey: currentSource.requiresAuth ? apiKey : undefined
         })
       });
 
@@ -181,35 +175,44 @@ function App() {
 
       const data = await response.json();
 
-      setLawnetResults(prev => [
+      setSearchResults(prev => [
         ...prev.filter(r => r.searchTerm !== caseName),
-        { searchTerm: caseName, results: data.results || [] }
+        { 
+          searchTerm: caseName, 
+          source: selectedSource,
+          sourceName: currentSource.name,
+          results: data.results || [] 
+        }
       ]);
 
     } catch (error) {
-      console.error('LawNet query error:', error);
-      setError(`LawNet query failed: ${error.message}`);
+      setError(`Search failed: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const clearApiKey = () => {
-    setApiKey('');
-    setLawnetResults([]);
+  const handleSourceChange = (sourceId) => {
+    setSelectedSource(sourceId);
+    setShowSourceDialog(false);
+    setSearchResults([]); // Clear previous results when switching sources
   };
 
-  const clearConfiguration = async () => {
-    setConfigFromStorage({});
-    setShowConfigDialog(true);
-  };
+  const getCurrentSource = () => SEARCH_SOURCES.find(s => s.id === selectedSource);
 
   return (
     <div className="app-container">
       <header>
         <h1><i className="fas fa-briefcase"></i> Briefcase</h1>
         <div className="header-controls">
-          {serverConfig && (
+          <div className="source-selector">
+            <button onClick={() => setShowSourceDialog(true)} className="source-btn">
+              <i className="fas fa-database"></i> {getCurrentSource()?.name}
+              <i className="fas fa-chevron-down"></i>
+            </button>
+          </div>
+
+          {serverConfig && selectedSource === 'lawnet' && (
             <div className="config-status">
               <span className={`status-indicator ${serverConfig.configSource !== 'none' ? 'configured' : 'unconfigured'}`}>
                 <i className={`fas ${serverConfig.configSource !== 'none' ? 'fa-check-circle' : 'fa-exclamation-triangle'}`}></i>
@@ -217,29 +220,36 @@ function App() {
                  serverConfig.configSource === 'dynamic' ? 'Configured' : 'Not Configured'}
               </span>
               {serverConfig.configSource !== 'env_file' && (
-                <button onClick={clearConfiguration} className="config-btn">
+                <button onClick={() => setShowConfigDialog(true)} className="config-btn">
                   <i className="fas fa-cog"></i> Configure
                 </button>
               )}
             </div>
           )}
 
-          {apiKey ? (
-            <div className="api-status">
-              <i className="fas fa-key"></i> API Connected
-              <button onClick={clearApiKey} className="clear-btn">
-                <i className="fas fa-times"></i>
+          {getCurrentSource()?.requiresAuth && (
+            apiKey ? (
+              <div className="api-status">
+                <i className="fas fa-key"></i> API Connected
+                <button onClick={() => setApiKey('')} className="clear-btn">
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setShowApiDialog(true)} className="auth-btn">
+                <i className="fas fa-key"></i> Configure API Key
               </button>
-            </div>
-          ) : (
-            <button onClick={() => setShowApiDialog(true)} className="auth-btn">
-              <i className="fas fa-key"></i> Configure LawNet API
-            </button>
+            )
           )}
         </div>
       </header>
 
       <main>
+        <div className="source-info">
+          <i className="fas fa-info-circle"></i>
+          <span>Current source: <strong>{getCurrentSource()?.name}</strong> - {getCurrentSource()?.description}</span>
+        </div>
+
         <div {...getRootProps()} className={`dropzone ${isDragActive ? 'active' : ''}`}>
           <input {...getInputProps()} />
           <i className="fas fa-cloud-upload-alt fa-3x"></i>
@@ -247,7 +257,6 @@ function App() {
         </div>
 
         {loading && <div className="loader"><i className="fas fa-spinner fa-spin"></i> Processing...</div>}
-
         {error && <div className="error-message"><i className="fas fa-exclamation-triangle"></i> {error}</div>}
 
         {cases.length > 0 && (
@@ -257,8 +266,8 @@ function App() {
               {cases.map((caseName, index) => (
                 <div key={index} className="case-item">
                   <div className="case-name">{caseName}</div>
-                  <button onClick={() => queryLawNet(caseName)} className="search-btn">
-                    <i className="fas fa-search"></i> Search LawNet
+                  <button onClick={() => searchCases(caseName)} className="search-btn">
+                    <i className="fas fa-search"></i> Search {getCurrentSource()?.name}
                   </button>
                 </div>
               ))}
@@ -266,12 +275,15 @@ function App() {
           </div>
         )}
 
-        {lawnetResults.length > 0 && (
-          <div className="lawnet-results">
-            <h2>LawNet Search Results:</h2>
-            {lawnetResults.map((result, index) => (
+        {searchResults.length > 0 && (
+          <div className="search-results">
+            <h2>Search Results:</h2>
+            {searchResults.map((result, index) => (
               <div key={index} className="result-group">
-                <h3>Results for: {result.searchTerm}</h3>
+                <h3>
+                  Results for: {result.searchTerm} 
+                  <span className="source-tag">via {result.sourceName}</span>
+                </h3>
                 {result.results.length > 0 ? (
                   <div className="result-items">
                     {result.results.map((item, itemIndex) => (
@@ -296,6 +308,15 @@ function App() {
         )}
       </main>
 
+      {showSourceDialog && (
+        <SourceSelectionDialog
+          sources={SEARCH_SOURCES}
+          currentSource={selectedSource}
+          onSelect={handleSourceChange}
+          onClose={() => setShowSourceDialog(false)}
+        />
+      )}
+
       {showConfigDialog && (
         <ConfigurationDialog
           onSubmit={handleConfigSubmit}
@@ -317,7 +338,41 @@ function App() {
   );
 }
 
-// Configuration Dialog Component
+// Source Selection Dialog Component
+function SourceSelectionDialog({ sources, currentSource, onSelect, onClose }) {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h3><i className="fas fa-database"></i> Select Search Source</h3>
+          <button onClick={onClose} className="close-btn">
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div className="modal-body">
+          <div className="source-options">
+            {sources.map((source) => (
+              <div 
+                key={source.id} 
+                className={`source-option ${currentSource === source.id ? 'selected' : ''}`}
+                onClick={() => onSelect(source.id)}
+              >
+                <div className="source-header">
+                  <h4>{source.name}</h4>
+                  {source.requiresAuth && <span className="auth-badge">Requires API Key</span>}
+                </div>
+                <p className="source-description">{source.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Configuration Dialog Component (unchanged)
 function ConfigurationDialog({ onSubmit, onClose, initialConfig = {} }) {
   const [config, setConfig] = useState({
     LAWNET_CLIENT_ID: initialConfig.LAWNET_CLIENT_ID || '',
@@ -423,7 +478,7 @@ function ConfigurationDialog({ onSubmit, onClose, initialConfig = {} }) {
   );
 }
 
-// API Key Dialog Component
+// API Key Dialog Component (unchanged)
 function ApiKeyDialog({ onSubmit, onClose }) {
   const [key, setKey] = useState('');
 
@@ -438,7 +493,7 @@ function ApiKeyDialog({ onSubmit, onClose }) {
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h3><i className="fas fa-key"></i> LawNet API Key</h3>
+          <h3><i className="fas fa-key"></i> API Key Configuration</h3>
           <button onClick={onClose} className="close-btn">
             <i className="fas fa-times"></i>
           </button>
@@ -453,7 +508,7 @@ function ApiKeyDialog({ onSubmit, onClose }) {
                 type="password"
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-                placeholder="Enter your LawNet API key"
+                placeholder="Enter your API key"
                 required
               />
             </div>
