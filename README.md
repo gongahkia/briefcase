@@ -57,6 +57,12 @@ LAWNET_USER_INFO_URL=https://api.lawnet.sg/user/info
 LAWNET_API_BASE_URL=https://api.lawnet.sg
 ```
 
+`./client/.env`
+
+```env
+REACT_APP_API_URL=http://localhost:3001
+```
+
 ## Screenshot
 
 ...
