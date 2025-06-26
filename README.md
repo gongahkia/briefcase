@@ -17,7 +17,23 @@ Web App that [brief](https://dictionary.cambridge.org/dictionary/english/brief)s
 ...
 
 ```console
-$ 
+$ git clone 
+```
+
+Production Build and Run
+
+```console
+$ docker-compose up --build
+$ docker-compose up -d --build
+$ docker-compose logs -f
+$ docker-compose down
+```
+
+Development Build and Run
+
+```console
+$ docker-compose -f docker-compose.dev.yml up --build
+$ docker-compose -f docker-compose.dev.yml up -d --build
 ```
 
 ...
