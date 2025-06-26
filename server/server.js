@@ -3,10 +3,21 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const bodyParser = require('body-parser');
-require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+
+// Try to load .env file if it exists
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  require('dotenv').config();
+  console.log('✅ Loaded configuration from .env file');
+} else {
+  console.log('⚠️  No .env file found, will use dynamic configuration');
+}
 
 const authRoutes = require('./routes/auth');
 const casesRoutes = require('./routes/cases');
+const configRoutes = require('./routes/config');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -34,8 +45,8 @@ app.use(cors({
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: {
     error: 'Too many requests from this IP, please try again later.',
     retryAfter: '15 minutes'
@@ -44,16 +55,14 @@ const limiter = rateLimit({
   legacyHeaders: false
 });
 
-// LawNet specific rate limiting (5 calls per second as per their terms)
 const lawnetLimiter = rateLimit({
-  windowMs: 1000, // 1 second
-  max: 5, // 5 requests per second
+  windowMs: 1000,
+  max: 5,
   message: {
     error: 'LawNet API rate limit exceeded. Maximum 5 requests per second.',
     retryAfter: '1 second'
   },
   keyGenerator: (req) => {
-    // Rate limit per API key to allow multiple users
     return req.body.apiKey || req.ip;
   }
 });
@@ -67,11 +76,13 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    configSource: fs.existsSync(envPath) ? '.env file' : 'dynamic'
   });
 });
 
 // Routes
+app.use('/api/config', configRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/cases', lawnetLimiter, casesRoutes);
 
@@ -113,6 +124,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Briefcase server running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`⚙️  Config source: ${fs.existsSync(envPath) ? '.env file' : 'dynamic configuration'}`);
 });
 
 module.exports = app;
