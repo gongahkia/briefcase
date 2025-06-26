@@ -69,7 +69,10 @@ REACT_APP_API_URL=http://localhost:3001
 
 ## Sources
 
-...
+* [LawNet API](https://github.com/kengwoon/LawNet-APIs)
+* [CommonLII](https://www.commonlii.org/sg/)
+* [Singapore Courts](https://www.judiciary.gov.sg/)
+* [OGP Pair Search](https://search.pair.gov.sg/)
 
 ## Architecture
 
