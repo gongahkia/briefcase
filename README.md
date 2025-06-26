@@ -2,7 +2,7 @@
 
 # `BriefCase` 💼
 
-Web App that [brief](https://dictionary.cambridge.org/dictionary/english/brief)s you on [case](https://www.law.cornell.edu/wex/case)s through [Case Briefs](https://law.syracuse.edu/wp-content/uploads/Case-Briefing.pdf).
+Web App that [brief](https://dictionary.cambridge.org/dictionary/english/brief)s you on [case](https://www.law.cornell.edu/wex/case)s through [Case Briefs](https://law.syracuse.edu/wp-content/uploads/Case-Briefing.pdf), pulled from [multiple sources](#sources).
 
 ## Rationale
 
@@ -64,6 +64,10 @@ REACT_APP_API_URL=http://localhost:3001
 ```
 
 ## Screenshot
+
+...
+
+## Sources
 
 ...
 
