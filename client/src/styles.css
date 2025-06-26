@@ -248,3 +248,62 @@
 .instructions li {
   margin-bottom: 5px;
 }
+
+.config-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.status-indicator.configured {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-indicator.unconfigured {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.config-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.large-modal .modal-content {
+  max-width: 600px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: var(--primary);
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
