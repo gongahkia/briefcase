@@ -1,22 +1,43 @@
 const express = require('express');
-const axios = require('axios');
 const router = express.Router();
 
-// LawNet API configuration
-const LAWNET_API_CONFIG = {
-  baseUrl: process.env.LAWNET_API_BASE_URL || 'https://api.lawnet.sg',
-  searchEndpoint: '/v1/cases/search',
-  detailsEndpoint: '/v1/cases/details',
-  timeout: 30000 // 30 seconds for search operations
+// Import all scrapers
+const lawnetScraper = require('../scrapers/lawnet');
+const commonliiScraper = require('../scrapers/commonlii');
+const singaporeCourtsScraper = require('../scrapers/singaporeCourts');
+const ogpScraper = require('../scrapers/ogp');
+
+// Available search sources
+const SEARCH_SOURCES = {
+  'lawnet': {
+    name: 'LawNet API',
+    scraper: lawnetScraper,
+    requiresAuth: true
+  },
+  'commonlii': {
+    name: 'CommonLII',
+    scraper: commonliiScraper,
+    requiresAuth: false
+  },
+  'singapore-courts': {
+    name: 'Singapore Courts',
+    scraper: singaporeCourtsScraper,
+    requiresAuth: false
+  },
+  'ogp': {
+    name: 'OGP Pair Search',
+    scraper: ogpScraper,
+    requiresAuth: false
+  }
 };
 
 /**
- * Search for legal cases
+ * Search for legal cases across multiple sources
  * POST /api/cases/search
  */
 router.post('/search', async (req, res) => {
   try {
-    const { query, apiKey, filters = {} } = req.body;
+    const { query, source = 'commonlii', apiKey, filters = {} } = req.body;
     
     // Validate required parameters
     if (!query) {
@@ -25,95 +46,77 @@ router.post('/search', async (req, res) => {
         message: 'Query parameter is required'
       });
     }
-    
-    if (!apiKey) {
+
+    // Validate source
+    const sourceConfig = SEARCH_SOURCES[source];
+    if (!sourceConfig) {
       return res.status(400).json({
-        error: 'Missing API key',
-        message: 'LawNet API key is required'
+        error: 'Invalid source',
+        message: `Source '${source}' is not supported. Available sources: ${Object.keys(SEARCH_SOURCES).join(', ')}`
       });
     }
 
-    // Prepare search parameters
+    // Check authentication for sources that require it
+    if (sourceConfig.requiresAuth && !apiKey) {
+      return res.status(400).json({
+        error: 'Missing API key',
+        message: `Source '${source}' requires an API key`
+      });
+    }
+
+    console.log(`Searching ${sourceConfig.name} for: "${query}"`);
+
+    // Execute search using the appropriate scraper
     const searchParams = {
-      q: query,
-      limit: filters.limit || 10,
-      offset: filters.offset || 0,
-      sort: filters.sort || 'relevance',
-      jurisdiction: filters.jurisdiction || 'singapore',
-      dateFrom: filters.dateFrom,
-      dateTo: filters.dateTo,
-      court: filters.court,
-      caseType: filters.caseType
+      query,
+      apiKey,
+      filters,
+      source
     };
 
-    // Remove undefined parameters
-    Object.keys(searchParams).forEach(key => {
-      if (searchParams[key] === undefined) {
-        delete searchParams[key];
-      }
-    });
-
-    console.log(`Searching LawNet for: "${query}"`);
-
-    // Make request to LawNet API
-    const response = await axios.get(`${LAWNET_API_CONFIG.baseUrl}${LAWNET_API_CONFIG.searchEndpoint}`, {
-      params: searchParams,
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Accept': 'application/json',
-        'User-Agent': 'Briefcase-Legal-Retrieval/1.0'
-      },
-      timeout: LAWNET_API_CONFIG.timeout
-    });
-
-    // Process and format results
-    const results = response.data.results || response.data.cases || [];
-    const formattedResults = results.map(formatCaseResult);
+    const results = await sourceConfig.scraper.search(searchParams);
 
     res.json({
       success: true,
+      source: source,
+      sourceName: sourceConfig.name,
       query: query,
-      totalResults: response.data.total || results.length,
-      results: formattedResults,
-      pagination: {
-        limit: searchParams.limit,
-        offset: searchParams.offset,
-        hasMore: results.length === searchParams.limit
-      }
+      totalResults: results.length,
+      results: results,
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {
-    console.error('LawNet search error:', error.response?.data || error.message);
+    console.error(`Search error for source '${req.body.source}':`, error);
     
     if (error.response) {
       const status = error.response.status;
-      const errorData = error.response.data;
       
       if (status === 401) {
         return res.status(401).json({
           error: 'Invalid API key',
-          message: 'LawNet API key is invalid or expired'
+          message: 'API key is invalid or expired'
         });
       }
       
       if (status === 403) {
         return res.status(403).json({
           error: 'Access denied',
-          message: 'Insufficient permissions for LawNet API access'
+          message: 'Insufficient permissions for API access'
         });
       }
       
       if (status === 429) {
         return res.status(429).json({
           error: 'Rate limit exceeded',
-          message: 'LawNet API rate limit exceeded. Please try again later.'
+          message: 'API rate limit exceeded. Please try again later.'
         });
       }
       
       if (status >= 500) {
         return res.status(503).json({
-          error: 'LawNet service unavailable',
-          message: 'LawNet API is currently unavailable'
+          error: 'Service unavailable',
+          message: 'Search service is currently unavailable'
         });
       }
     }
@@ -121,53 +124,75 @@ router.post('/search', async (req, res) => {
     if (error.code === 'ECONNABORTED') {
       return res.status(408).json({
         error: 'Request timeout',
-        message: 'LawNet API request timed out'
+        message: 'Search request timed out'
       });
     }
     
     res.status(500).json({
       error: 'Search failed',
-      message: 'Unable to search LawNet database'
+      message: 'Unable to search database',
+      source: req.body.source
     });
   }
 });
 
 /**
- * Get case details by ID
- * GET /api/cases/:caseId
+ * Get available search sources
+ * GET /api/cases/sources
  */
-router.get('/:caseId', async (req, res) => {
+router.get('/sources', (req, res) => {
+  const sources = Object.keys(SEARCH_SOURCES).map(key => ({
+    id: key,
+    name: SEARCH_SOURCES[key].name,
+    requiresAuth: SEARCH_SOURCES[key].requiresAuth
+  }));
+
+  res.json({
+    success: true,
+    sources: sources
+  });
+});
+
+/**
+ * Get case details by ID and source
+ * GET /api/cases/:source/:caseId
+ */
+router.get('/:source/:caseId', async (req, res) => {
   try {
-    const { caseId } = req.params;
+    const { source, caseId } = req.params;
     const { apiKey } = req.query;
     
-    if (!apiKey) {
+    const sourceConfig = SEARCH_SOURCES[source];
+    if (!sourceConfig) {
       return res.status(400).json({
-        error: 'Missing API key',
-        message: 'LawNet API key is required'
+        error: 'Invalid source',
+        message: `Source '${source}' is not supported`
       });
     }
 
-    console.log(`Fetching case details for: ${caseId}`);
+    if (sourceConfig.requiresAuth && !apiKey) {
+      return res.status(400).json({
+        error: 'Missing API key',
+        message: 'API key is required for this source'
+      });
+    }
 
-    const response = await axios.get(`${LAWNET_API_CONFIG.baseUrl}${LAWNET_API_CONFIG.detailsEndpoint}/${caseId}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Accept': 'application/json',
-        'User-Agent': 'Briefcase-Legal-Retrieval/1.0'
-      },
-      timeout: LAWNET_API_CONFIG.timeout
+    console.log(`Fetching case details for: ${caseId} from ${sourceConfig.name}`);
+
+    const caseDetails = await sourceConfig.scraper.getDetails({
+      caseId,
+      apiKey,
+      source
     });
-
-    const caseDetails = formatCaseDetails(response.data);
 
     res.json({
       success: true,
+      source: source,
       case: caseDetails
     });
 
   } catch (error) {
-    console.error('Case details error:', error.response?.data || error.message);
+    console.error('Case details error:', error);
     
     if (error.response?.status === 404) {
       return res.status(404).json({
@@ -182,42 +207,5 @@ router.get('/:caseId', async (req, res) => {
     });
   }
 });
-
-/**
- * Format case search result
- */
-function formatCaseResult(caseData) {
-  return {
-    id: caseData.id || caseData.caseId,
-    title: caseData.title || caseData.caseName || 'Untitled Case',
-    citation: caseData.citation || caseData.neutralCitation,
-    court: caseData.court || caseData.courtName,
-    date: caseData.date || caseData.decisionDate,
-    judges: caseData.judges || caseData.judgeNames,
-    summary: caseData.summary || caseData.headnote || '',
-    url: caseData.url || caseData.permalink,
-    relevanceScore: caseData.score || caseData.relevance,
-    categories: caseData.categories || caseData.subjects || [],
-    parties: {
-      plaintiff: caseData.plaintiff || caseData.applicant,
-      defendant: caseData.defendant || caseData.respondent
-    }
-  };
-}
-
-/**
- * Format detailed case information
- */
-function formatCaseDetails(caseData) {
-  return {
-    ...formatCaseResult(caseData),
-    fullText: caseData.fullText || caseData.judgment,
-    procedureHistory: caseData.procedureHistory || [],
-    citedCases: caseData.citedCases || caseData.casesReferred || [],
-    legislation: caseData.legislation || caseData.statutesReferred || [],
-    keywords: caseData.keywords || caseData.indexTerms || [],
-    catchwords: caseData.catchwords || []
-  };
-}
 
 module.exports = router;
