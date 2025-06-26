@@ -4,6 +4,9 @@ import { extractTextFromPDF } from './utils/pdfParser';
 import { findCaseNames } from './utils/caseMatcher';
 import './styles.css';
 
+// Add this constant at the top - THIS IS THE KEY FIX
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 // Custom hook for localStorage with fallback
 function useLocalStorage(key, defaultValue) {
   const [value, setValue] = useState(() => {
@@ -44,12 +47,20 @@ function App() {
     checkServerConfig();
   }, []);
 
+  // FIXED: Use absolute URL with proper error handling
   const checkServerConfig = async () => {
     try {
-      const response = await fetch('/api/config/status');
+      console.log('Checking server config at:', `${API_BASE_URL}/api/config/status`);
+      
+      const response = await fetch(`${API_BASE_URL}/api/config/status`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const configStatus = await response.json();
       setServerConfig(configStatus);
-      
+
       // If no configuration exists, check localStorage or prompt user
       if (configStatus.configSource === 'none') {
         if (Object.keys(configFromStorage).length > 0) {
@@ -62,45 +73,51 @@ function App() {
       }
     } catch (error) {
       console.error('Failed to check server config:', error);
-      setError('Failed to connect to server');
+      setError(`Failed to connect to server: ${error.message}`);
     }
   };
 
+  // FIXED: Use absolute URL
   const setServerConfigFromStorage = async () => {
     try {
-      const response = await fetch('/api/config/set', {
+      const response = await fetch(`${API_BASE_URL}/api/config/set`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(configFromStorage)
       });
-      
-      if (response.ok) {
-        console.log('✅ Configuration loaded from localStorage');
-        await checkServerConfig();
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
+      console.log('✅ Configuration loaded from localStorage');
+      await checkServerConfig();
     } catch (error) {
       console.error('Failed to set config from storage:', error);
+      setError(`Configuration error: ${error.message}`);
     }
   };
 
+  // FIXED: Use absolute URL with better error handling
   const handleConfigSubmit = async (config) => {
     try {
-      const response = await fetch('/api/config/set', {
+      const response = await fetch(`${API_BASE_URL}/api/config/set`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
       });
-      
-      if (response.ok) {
-        setConfigFromStorage(config);
-        setShowConfigDialog(false);
-        await checkServerConfig();
-      } else {
-        const errorData = await response.json();
-        setError(`Configuration error: ${errorData.message}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
+
+      setConfigFromStorage(config);
+      setShowConfigDialog(false);
+      await checkServerConfig();
     } catch (error) {
-      setError(`Failed to save configuration: ${error.message}`);
+      console.error('Configuration submit error:', error);
+      setError(`Configuration error: ${error.message}`);
     }
   };
 
@@ -108,17 +125,18 @@ function App() {
     setLoading(true);
     setError('');
     const file = acceptedFiles[0];
-    
+
     try {
-      const text = file.type === 'application/pdf' 
-        ? await extractTextFromPDF(file) 
+      const text = file.type === 'application/pdf'
+        ? await extractTextFromPDF(file)
         : await file.text();
-      
+
       const foundCases = findCaseNames(text);
       setCases(foundCases);
       setLawnetResults([]);
-      
+
     } catch (error) {
+      console.error('File processing error:', error);
       setError(`Processing error: ${error.message}`);
     } finally {
       setLoading(false);
@@ -134,6 +152,7 @@ function App() {
     maxFiles: 1
   });
 
+  // FIXED: Use absolute URL
   const queryLawNet = async (caseName) => {
     if (!apiKey) {
       setShowApiDialog(true);
@@ -144,7 +163,9 @@ function App() {
     setError('');
 
     try {
-      const response = await fetch('/api/cases/search', {
+      console.log('Querying LawNet at:', `${API_BASE_URL}/api/cases/search`);
+      
+      const response = await fetch(`${API_BASE_URL}/api/cases/search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -154,17 +175,19 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `API Error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      
+
       setLawnetResults(prev => [
         ...prev.filter(r => r.searchTerm !== caseName),
         { searchTerm: caseName, results: data.results || [] }
       ]);
 
     } catch (error) {
+      console.error('LawNet query error:', error);
       setError(`LawNet query failed: ${error.message}`);
     } finally {
       setLoading(false);
@@ -190,7 +213,7 @@ function App() {
             <div className="config-status">
               <span className={`status-indicator ${serverConfig.configSource !== 'none' ? 'configured' : 'unconfigured'}`}>
                 <i className={`fas ${serverConfig.configSource !== 'none' ? 'fa-check-circle' : 'fa-exclamation-triangle'}`}></i>
-                {serverConfig.configSource === 'env_file' ? 'ENV File' : 
+                {serverConfig.configSource === 'env_file' ? 'ENV File' :
                  serverConfig.configSource === 'dynamic' ? 'Configured' : 'Not Configured'}
               </span>
               {serverConfig.configSource !== 'env_file' && (
@@ -200,7 +223,7 @@ function App() {
               )}
             </div>
           )}
-          
+
           {apiKey ? (
             <div className="api-status">
               <i className="fas fa-key"></i> API Connected
@@ -224,7 +247,7 @@ function App() {
         </div>
 
         {loading && <div className="loader"><i className="fas fa-spinner fa-spin"></i> Processing...</div>}
-        
+
         {error && <div className="error-message"><i className="fas fa-exclamation-triangle"></i> {error}</div>}
 
         {cases.length > 0 && (
@@ -274,7 +297,7 @@ function App() {
       </main>
 
       {showConfigDialog && (
-        <ConfigurationDialog 
+        <ConfigurationDialog
           onSubmit={handleConfigSubmit}
           onClose={() => setShowConfigDialog(false)}
           initialConfig={configFromStorage}
@@ -282,7 +305,7 @@ function App() {
       )}
 
       {showApiDialog && (
-        <ApiKeyDialog 
+        <ApiKeyDialog
           onSubmit={(key) => {
             setApiKey(key);
             setShowApiDialog(false);
@@ -323,7 +346,7 @@ function ConfigurationDialog({ onSubmit, onClose, initialConfig = {} }) {
             <i className="fas fa-times"></i>
           </button>
         </div>
-        
+
         <div className="modal-body">
           <form onSubmit={handleSubmit}>
             <div className="form-group">
@@ -336,7 +359,7 @@ function ConfigurationDialog({ onSubmit, onClose, initialConfig = {} }) {
                 required
               />
             </div>
-            
+
             <div className="form-group">
               <label>Client Secret:</label>
               <input
@@ -347,7 +370,7 @@ function ConfigurationDialog({ onSubmit, onClose, initialConfig = {} }) {
                 required
               />
             </div>
-            
+
             <div className="form-group">
               <label>Redirect URI:</label>
               <input
@@ -357,7 +380,7 @@ function ConfigurationDialog({ onSubmit, onClose, initialConfig = {} }) {
                 required
               />
             </div>
-            
+
             <div className="form-group">
               <label>Token URL:</label>
               <input
@@ -367,7 +390,7 @@ function ConfigurationDialog({ onSubmit, onClose, initialConfig = {} }) {
                 required
               />
             </div>
-            
+
             <div className="form-group">
               <label>User Info URL:</label>
               <input
@@ -377,7 +400,7 @@ function ConfigurationDialog({ onSubmit, onClose, initialConfig = {} }) {
                 required
               />
             </div>
-            
+
             <div className="form-group">
               <label>API Base URL:</label>
               <input
@@ -387,7 +410,7 @@ function ConfigurationDialog({ onSubmit, onClose, initialConfig = {} }) {
                 required
               />
             </div>
-            
+
             <div className="form-actions">
               <button type="submit" className="submit-btn">
                 <i className="fas fa-save"></i> Save Configuration
@@ -400,7 +423,7 @@ function ConfigurationDialog({ onSubmit, onClose, initialConfig = {} }) {
   );
 }
 
-// API Key Dialog Component (unchanged)
+// API Key Dialog Component
 function ApiKeyDialog({ onSubmit, onClose }) {
   const [key, setKey] = useState('');
 
@@ -420,7 +443,7 @@ function ApiKeyDialog({ onSubmit, onClose }) {
             <i className="fas fa-times"></i>
           </button>
         </div>
-        
+
         <div className="modal-body">
           <form onSubmit={handleSubmit}>
             <div className="form-group">
@@ -434,7 +457,7 @@ function ApiKeyDialog({ onSubmit, onClose }) {
                 required
               />
             </div>
-            
+
             <div className="form-actions">
               <button type="submit" className="submit-btn">
                 <i className="fas fa-check"></i> Connect
