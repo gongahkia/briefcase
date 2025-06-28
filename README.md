@@ -14,7 +14,12 @@ Web App that [brief](https://dictionary.cambridge.org/dictionary/english/brief)s
 
 ## Stack
 
-...
+* *Frontend*: [React](https://react.dev/), [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+* *Backend*: [Node.js](https://nodejs.org/en), [Express.js](https://expressjs.com/)
+* *Scrapers*: [Axios](https://axios-http.com/docs/intro), [Cheerio](https://cheerio.js.org/)
+* *Package*: [Docker](https://www.docker.com/)
+* *Web Server*: [Nginx](https://nginx.org/)
+* *Schedule*: [Nodemon](https://www.npmjs.com/package/nodemon)
 
 ## Usage
 
@@ -67,6 +72,12 @@ LAWNET_API_BASE_URL=https://api.lawnet.sg
 REACT_APP_API_URL=http://localhost:3001
 ```
 
+Then check the following API endpoints.
+
+* *Frontend*: [`http://localhost:3000`](http://localhost:3000/)
+* *Backend API*: [`http://localhost:3001`](http://localhost:3001/)
+* *Health Check*: [`http://localhost:3001/health`](http://localhost:3001/health)
+
 ## Screenshot
 
 ...
@@ -80,7 +91,56 @@ REACT_APP_API_URL=http://localhost:3001
 
 ## Architecture
 
+### Overview
+
 ...
+
+### User Sequence
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Frontend as Frontend (React)
+    participant Backend as Backend (Express)
+    participant Scrapers as Scrapers
+    participant Sources as External Sources
+
+    User->>Frontend: Uploads PDF/TXT document
+    Frontend->>Frontend: Extract text (PDF.js)
+    Frontend->>Frontend: Identify cases (Regex)
+    
+    loop For each identified case
+        User->>Frontend: Selects search source
+        Frontend->>Backend: POST /api/cases/search {caseName, source, apiKey?}
+        
+        alt Source = LawNet
+            Backend->>Scrapers: LawNet API call
+            Scrapers->>Sources: Authenticated request
+            Sources-->>Scrapers: JSON response
+        else Source = CommonLII
+            Backend->>Scrapers: CommonLII scraper
+            Scrapers->>Sources: HTTP request
+            Sources-->>Scrapers: HTML response
+            Scrapers->>Scrapers: Parse HTML (Cheerio)
+        else Source = Singapore Courts
+            Backend->>Scrapers: Courts scraper
+            Scrapers->>Sources: HTTP request
+            Sources-->>Scrapers: HTML response
+            Scrapers->>Scrapers: Parse HTML
+        else Source = OGP
+            Backend->>Scrapers: OGP scraper
+            Scrapers->>Sources: HTTP request
+            Sources-->>Scrapers: JSON/HTML response
+        end
+        
+        Scrapers-->>Backend: Formatted results
+        Backend-->>Frontend: Structured case data
+    end
+    
+    Frontend->>User: Display results
+    User->>Frontend: Clicks case link
+    Frontend->>Sources: Direct navigation (new tab)
+```
 
 ## Reference
 
