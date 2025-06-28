@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function ConfigurationDialog({ onSubmit, onClose, initialConfig = {} }) {
   const [config, setConfig] = useState({
