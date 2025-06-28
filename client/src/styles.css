@@ -43,7 +43,7 @@ body {
 }
 
 .search-btn {
-  background: var(--secondary);
+  background: #2980b9;
   color: white;
   border: none;
   padding: 8px 12px;
@@ -53,7 +53,7 @@ body {
 }
 
 .search-btn:hover {
-  background: #2980b9;
+  background:#69A6CE;
 }
 
 .lawnet-results {
@@ -524,7 +524,7 @@ body {
 }
 
 .case-select input:checked ~ .checkmark {
-  background-color: var(--secondary);
+  background: #2980b9;
 }
 
 .checkmark:after {

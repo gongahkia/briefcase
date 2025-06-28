@@ -1,20 +1,13 @@
 import React, { useState } from 'react';
 
-export default function ApiKeyDialog({ onSubmit, onClose, source }) {
+function ApiKeyDialog({ onSubmit, onClose }) {
   const [key, setKey] = useState('');
 
-  const getInstructions = () => {
-    if (source === 'vlex') {
-      return (
-        <div className="api-instructions">
-          <p>vLex requires a paid subscription. Obtain API keys from:</p>
-          <a href="https://vlex.com/products/vlex-apis" target="_blank" rel="noopener noreferrer">
-            vLex API Portal
-          </a>
-        </div>
-      );
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (key.trim()) {
+      onSubmit(key.trim());
     }
-    return null;
   };
 
   return (
@@ -26,9 +19,8 @@ export default function ApiKeyDialog({ onSubmit, onClose, source }) {
             <i className="fas fa-times"></i>
           </button>
         </div>
-        
+
         <div className="modal-body">
-          {getInstructions()}
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="apiKey">API Key:</label>
@@ -53,3 +45,5 @@ export default function ApiKeyDialog({ onSubmit, onClose, source }) {
     </div>
   );
 }
+
+export default ApiKeyDialog;
