@@ -17,7 +17,6 @@ const SEARCH_SOURCES = [
   { id: 'singapore-courts', name: 'Singapore Courts', requiresAuth: false, description: 'Recent free judgments (last 3 months)' },
   { id: 'ogp', name: 'OGP Pair Search', requiresAuth: false, description: 'Government Supreme Court judgments' },
   { id: 'slw', name: 'Singapore Law Watch', requiresAuth: false, description: 'Free Supreme Court judgments from 2000+' },
-  { id: 'judiciary-sg', name: 'Singapore Judiciary', requiresAuth: false, description: 'Official court judgments and summaries' },
   { id: 'vlex', name: 'vLex Singapore', requiresAuth: true, description: 'Premium database (requires subscription)' }
 ];
 
