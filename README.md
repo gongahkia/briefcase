@@ -69,6 +69,9 @@ LAWNET_API_BASE_URL=https://api.lawnet.sg
 `./client/.env`
 
 ```env
+HOST=0.0.0.0
+PORT=3000
+CHOKIDAR_USEPOLLING=true
 REACT_APP_API_URL=http://localhost:3001
 ```
 
