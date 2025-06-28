@@ -119,18 +119,33 @@ function App() {
   const onDrop = async (acceptedFiles) => {
     setLoading(true);
     setError('');
+    setCases([]); 
+    setSearchResults([]); 
+    
     const file = acceptedFiles[0];
-
+    
     try {
-      const text = file.type === 'application/pdf'
-        ? await extractTextFromPDF(file)
-        : await file.text();
-
+      console.log('Processing file:', file.name);
+      let text = '';
+      
+      if (file.type === 'application/pdf') {
+        console.log('Extracting text from PDF...');
+        text = await extractTextFromPDF(file);
+      } else if (file.type === 'text/plain') {
+        console.log('Reading text file...');
+        text = await file.text();
+      } else {
+        throw new Error('Unsupported file type');
+      }
+      
+      console.log('Text extracted. Length:', text.length);
       const foundCases = findCaseNames(text);
+      console.log('Identified cases:', foundCases);
+      
       setCases(foundCases);
-      setSearchResults([]);
-
+      
     } catch (error) {
+      console.error('File processing error:', error);
       setError(`Processing error: ${error.message}`);
     } finally {
       setLoading(false);
