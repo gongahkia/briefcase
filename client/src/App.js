@@ -126,11 +126,16 @@ function App() {
     setSearchResults([]);
     setFileProcessed(false);
     
+    if (acceptedFiles.length === 0) {
+      setLoading(false);
+      return;
+    }
+
     const file = acceptedFiles[0];
     
     try {
       if (!file) {
-        throw new Error('No file selected');
+        throw new Error('No valid file selected');
       }
       
       console.log('Processing file:', file.name);
@@ -171,23 +176,32 @@ function App() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected: (fileRejections) => {
+      if (fileRejections.length > 0) {
+        const firstRejection = fileRejections[0];
+        const { file, errors } = firstRejection;
+        const fileTooLarge = errors.some(e => e.code === 'file-too-large');
+        if (fileTooLarge) {
+          setError('File is too large. Maximum size is 10MB');
+          return;
+        }
+        const invalidType = errors.some(e => e.code === 'file-invalid-type');
+        if (invalidType) {
+          const fileExtension = file.name ? file.name.split('.').pop() : 'unknown';
+          setError(`Unsupported file type: ${fileExtension}`);
+          return;
+        }
+        setError(`File rejected: ${errors[0]?.message || 'Unknown error'}`);
+      }
+    },
     accept: {
       'application/pdf': ['.pdf'],
       'text/plain': ['.txt']
     },
     maxFiles: 1,
-    maxSize: 10 * 1024 * 1024, // 10MB
-    onDropRejected: (rejectedFiles) => {
-      const file = rejectedFiles[0];
-      if (file) {
-        if (file.size > 10 * 1024 * 1024) {
-          setError('File is too large. Maximum size is 10MB');
-        } else {
-          setError(`Unsupported file type: ${file.type || file.name.split('.').pop()}`);
-        }
-      }
-    }
+    maxSize: 10 * 1024 * 1024, 
   });
+
 
   const searchCases = async (caseName) => {
     const currentSource = SEARCH_SOURCES.find(s => s.id === selectedSource);
