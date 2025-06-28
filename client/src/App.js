@@ -475,10 +475,7 @@ function App() {
 
       {showApiDialog && (
         <ApiKeyDialog
-          onSubmit={(key) => {
-            setApiKey(key);
-            setShowApiDialog(false);
-          }}
+          onSubmit={handleApiKeySubmit}
           onClose={() => setShowApiDialog(false)}
         />
       )}

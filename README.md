@@ -92,6 +92,7 @@ Then check the following API endpoints.
 * [Singapore Courts](https://www.judiciary.gov.sg/)
 * [OGP Pair Search](https://search.pair.gov.sg/)
 * [Singapore Law Watch](https://www.singaporelawwatch.sg/)
+* [vLex](https://vlex.com/)
 
 ## Architecture
 
