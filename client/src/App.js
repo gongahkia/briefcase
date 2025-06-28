@@ -5,6 +5,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import SourceSelectionDialog from './components/SourceSelectionDialog';
 import ConfigurationDialog from './components/ConfigurationDialog';
 import ApiKeyDialog from './components/ApiKeyDialog';
+import IdentifiedCases from './components/IdentifiedCases';
 import { findCaseNamesOne, findCaseNamesTwo, findCaseNamesThree } from './utils/caseMatcher';
 import './styles.css';
 
@@ -19,6 +20,7 @@ const SEARCH_SOURCES = [
 
 function App() {
   const [cases, setCases] = useState([]);
+  const [directTextInput, setDirectTextInput] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedSource, setSelectedSource] = useLocalStorage('selected_source', 'commonlii');
   const [apiKey, setApiKey] = useLocalStorage('lawnet_api_key', '');
@@ -75,6 +77,63 @@ function App() {
     } catch (error) {
       console.error('Failed to set config from storage:', error);
       setError(`Configuration error: ${error.message}`);
+    }
+  };
+
+
+  const processTextContent = (text) => {
+    setInfo('Identifying legal cases...');
+    const foundCases = findCaseNamesThree(text);
+    const formattedCases = foundCases.map(name => ({ name, selected: true }));
+    if (formattedCases.length === 0) {
+      setInfo('No legal case citations found');
+    } else {
+      setInfo(`Found ${formattedCases.length} case citation(s)`);
+    }
+    setCases(formattedCases);
+    setFileProcessed(true);
+  };
+
+  const handleCaseSelect = (index, isSelected) => {
+    setCases(prev => prev.map((caseItem, i) => 
+      i === index ? { ...caseItem, selected: isSelected } : caseItem
+    ));
+  };
+
+  const handleSelectAll = () => {
+    const allSelected = cases.every(c => c.selected);
+    setCases(cases.map(c => ({ ...c, selected: !allSelected })));
+  };
+
+  const handleSearchCases = (caseNames) => {
+    caseNames.forEach(caseName => {
+      const currentSource = SEARCH_SOURCES.find(s => s.id === selectedSource);
+      
+      if (currentSource.requiresAuth && !apiKey) {
+        setShowApiDialog(true);
+        return;
+      }
+      
+      searchCases(caseName);
+    });
+  };
+
+  const handleDirectTextSubmit = () => {
+    if (!directTextInput.trim()) {
+      setError('Please enter text to analyze');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+    setInfo('Processing text...');
+    
+    try {
+      processTextContent(directTextInput);
+    } catch (error) {
+      setError(`Text processing error: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -297,6 +356,22 @@ function App() {
           <span>Current source: <strong>{getCurrentSource()?.name}</strong> - {getCurrentSource()?.description}</span>
         </div>
 
+        <div className="text-input-section">
+          <h3>Or paste text directly:</h3>
+          <textarea
+            value={directTextInput}
+            onChange={(e) => setDirectTextInput(e.target.value)}
+            placeholder="Paste legal text here..."
+            rows={4}
+          />
+          <button 
+            onClick={handleDirectTextSubmit} 
+            className="text-submit-btn"
+          >
+            <i className="fas fa-paragraph"></i> Analyze Text
+          </button>
+        </div>
+
         <div {...getRootProps()} className={`dropzone ${isDragActive ? 'active' : ''}`}>
           <input {...getInputProps()} />
           <i className="fas fa-cloud-upload-alt fa-3x"></i>
@@ -318,10 +393,13 @@ function App() {
           </div>
         )}
 
-        {fileProcessed && cases.length === 0 && !loading && (
-          <div className="no-cases-message">
-            <i className="fas fa-search-minus"></i> No legal case citations found in the document.
-          </div>
+        {fileProcessed && cases.length > 0 && (
+          <IdentifiedCases
+            cases={cases}
+            onSearch={handleSearchCases}
+            onSelect={handleCaseSelect}
+            onSelectAll={handleSelectAll}
+          />
         )}
 
         {cases.length > 0 && (
