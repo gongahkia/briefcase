@@ -19,3 +19,14 @@ export const findCaseNamesTwo = (text) => {
   console.log('Regex matches:', matches);
   return [...new Set(matches)];
 };
+
+export const findCaseNamesThree = (text) => {
+  const caseRegex = /\b([A-Z][\w&.,()\-\s]+?)\s+v\.?\s+([A-Z][\w&.,()\-\s]+?)\s+\[\d{4}\]\s+\d+\s+SLR(?:\(R\))?\s+\d+\b/g;
+  const matches = [];
+  let match;
+  while ((match = caseRegex.exec(text)) !== null) {
+    const caseName = `${match[1].trim()} v. ${match[2].trim()}`;
+    matches.push(caseName);
+  }
+  return [...new Set(matches)];
+};
