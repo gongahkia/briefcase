@@ -80,16 +80,23 @@ function App() {
     }
   };
 
-
   const processTextContent = (text) => {
+    console.log('Processing text content:', text.substring(0, 100) + '...');
     setInfo('Identifying legal cases...');
+    
     const foundCases = findCaseNamesThree(text);
+    console.log('Found raw cases:', foundCases);
+    
+    // Always format as objects with {name, selected} structure
     const formattedCases = foundCases.map(name => ({ name, selected: true }));
+    console.log('Formatted cases:', formattedCases);
+    
     if (formattedCases.length === 0) {
       setInfo('No legal case citations found');
     } else {
       setInfo(`Found ${formattedCases.length} case citation(s)`);
     }
+    
     setCases(formattedCases);
     setFileProcessed(true);
   };
@@ -102,7 +109,7 @@ function App() {
 
   const handleSelectAll = () => {
     const allSelected = cases.every(c => c.selected);
-    setCases(cases.map(c => ({ ...c, selected: !allSelected })));
+    setCases(prev => prev.map(c => ({ ...c, selected: !allSelected })));
   };
 
   const handleSearchCases = (caseNames) => {
@@ -119,6 +126,9 @@ function App() {
   };
 
   const handleDirectTextSubmit = () => {
+    console.log('Direct text submit clicked');
+    console.log('Input text:', directTextInput);
+    
     if (!directTextInput.trim()) {
       setError('Please enter text to analyze');
       return;
@@ -127,10 +137,13 @@ function App() {
     setLoading(true);
     setError('');
     setInfo('Processing text...');
+    setCases([]); // Clear previous cases
+    setSearchResults([]); // Clear previous results
     
     try {
       processTextContent(directTextInput);
     } catch (error) {
+      console.error('Text processing error:', error);
       setError(`Text processing error: ${error.message}`);
     } finally {
       setLoading(false);
@@ -194,22 +207,12 @@ function App() {
         throw new Error('Unsupported file type. Please upload PDF or TXT files.');
       }
       
-      setInfo('Identifying legal cases...');
-      const foundCases = findCaseNamesThree(text);
-      
-      if (foundCases.length === 0) {
-        setInfo('No legal case citations found in the document');
-      } else {
-        setInfo(`Found ${foundCases.length} case citation(s) in the document`);
-      }
-      
-      setCases(foundCases);
-      setFileProcessed(true);
+      // Use the same processing function for consistency
+      processTextContent(text);
       
     } catch (error) {
       console.error('File processing error:', error);
       setError(`Processing error: ${error.message}`);
-    } finally {
       setLoading(false);
     }
   };
@@ -241,7 +244,6 @@ function App() {
     maxFiles: 1,
     maxSize: 10 * 1024 * 1024, 
   });
-
 
   const searchCases = async (caseName) => {
     const currentSource = SEARCH_SOURCES.find(s => s.id === selectedSource);
@@ -393,29 +395,19 @@ function App() {
           </div>
         )}
 
-        {fileProcessed && cases.length > 0 && (
+        {fileProcessed && cases.length === 0 && !loading && (
+          <div className="no-cases-message">
+            <i className="fas fa-search-minus"></i> No legal case citations found in the document.
+          </div>
+        )}
+
+        {cases.length > 0 && (
           <IdentifiedCases
             cases={cases}
             onSearch={handleSearchCases}
             onSelect={handleCaseSelect}
             onSelectAll={handleSelectAll}
           />
-        )}
-
-        {cases.length > 0 && (
-          <div className="results-section">
-            <h2>Identified Cases:</h2>
-            <div className="cases-list">
-              {cases.map((caseName, index) => (
-                <div key={index} className="case-item">
-                  <div className="case-name">{caseName}</div>
-                  <button onClick={() => searchCases(caseName)} className="search-btn">
-                    <i className="fas fa-search"></i> Search {getCurrentSource()?.name}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
         )}
 
         {searchResults.length > 0 && (
