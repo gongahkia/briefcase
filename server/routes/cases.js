@@ -6,6 +6,9 @@ const lawnetScraper = require('../scrapers/lawnet');
 const commonliiScraper = require('../scrapers/commonlii');
 const singaporeCourtsScraper = require('../scrapers/singaporeCourts');
 const ogpScraper = require('../scrapers/ogp');
+const slwScraper = require('../scrapers/slw');
+const judiciarySgScraper = require('../scrapers/judiciarySg');
+const vlexScraper = require('../scrapers/vlex');
 
 // Available search sources
 const SEARCH_SOURCES = {
@@ -28,6 +31,21 @@ const SEARCH_SOURCES = {
     name: 'OGP Pair Search',
     scraper: ogpScraper,
     requiresAuth: false
+  },
+  'slw': {
+    name: 'Singapore Law Watch',
+    scraper: slwScraper,
+    requiresAuth: false
+  },
+  'judiciary-sg': {
+    name: 'Singapore Judiciary',
+    scraper: judiciarySgScraper,
+    requiresAuth: false
+  },
+  'vlex': {
+    name: 'vLex Singapore',
+    scraper: vlexScraper,
+    requiresAuth: true
   }
 };
 
