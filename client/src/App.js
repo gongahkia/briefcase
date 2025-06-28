@@ -6,7 +6,7 @@ import './styles.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-// Available search sources
+// FUA to add more sources
 const SEARCH_SOURCES = [
   { id: 'lawnet', name: 'LawNet API', requiresAuth: true, description: 'Official LawNet database (requires API key)' },
   { id: 'commonlii', name: 'CommonLII', requiresAuth: false, description: 'Free Singapore cases from 2006+' },
@@ -203,7 +203,7 @@ function App() {
   return (
     <div className="app-container">
       <header>
-        <h1><i className="fas fa-briefcase"></i> Briefcase</h1>
+        <h1><i className="fas fa-briefcase"></i> Briefcase Client</h1>
         <div className="header-controls">
           <div className="source-selector">
             <button onClick={() => setShowSourceDialog(true)} className="source-btn">
