@@ -306,7 +306,7 @@
 }
 
 .source-btn {
-  background: var(--secondary);
+  background: #2980b9;
   color: white;
   border: none;
   padding: 8px 12px;
@@ -319,7 +319,7 @@
 }
 
 .source-btn:hover {
-  background: #2980b9;
+  background:#2473A6;
 }
 
 .source-info {
