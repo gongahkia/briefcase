@@ -153,6 +153,14 @@ function App() {
     }
   };
 
+  const handleApiKeySubmit = (key) => {
+    setApiKey(key);
+    setShowApiDialog(false);
+    if (selectedSource === 'vlex') {
+      setInfo('vLex API key configured. Note: Requires valid subscription.');
+    }
+  };
+
   const handleConfigSubmit = async (config) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/config/set`, {
