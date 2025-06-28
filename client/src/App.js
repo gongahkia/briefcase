@@ -15,7 +15,10 @@ const SEARCH_SOURCES = [
   { id: 'lawnet', name: 'LawNet API', requiresAuth: true, description: 'Official LawNet database (requires API key)' },
   { id: 'commonlii', name: 'CommonLII', requiresAuth: false, description: 'Free Singapore cases from 2006+' },
   { id: 'singapore-courts', name: 'Singapore Courts', requiresAuth: false, description: 'Recent free judgments (last 3 months)' },
-  { id: 'ogp', name: 'OGP Pair Search', requiresAuth: false, description: 'Government Supreme Court judgments' }
+  { id: 'ogp', name: 'OGP Pair Search', requiresAuth: false, description: 'Government Supreme Court judgments' },
+  { id: 'slw', name: 'Singapore Law Watch', requiresAuth: false, description: 'Free Supreme Court judgments from 2000+' },
+  { id: 'judiciary-sg', name: 'Singapore Judiciary', requiresAuth: false, description: 'Official court judgments and summaries' },
+  { id: 'vlex', name: 'vLex Singapore', requiresAuth: true, description: 'Premium database (requires subscription)' }
 ];
 
 function App() {

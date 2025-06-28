@@ -91,6 +91,7 @@ Then check the following API endpoints.
 * [CommonLII](https://www.commonlii.org/sg/)
 * [Singapore Courts](https://www.judiciary.gov.sg/)
 * [OGP Pair Search](https://search.pair.gov.sg/)
+* [Singapore Law Watch](https://www.singaporelawwatch.sg/)
 
 ## Architecture
 
