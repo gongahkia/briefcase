@@ -461,12 +461,16 @@ body {
 }
 
 .text-submit-btn {
-  background: var(--primary);
+  background: #2980b9;
   color: white;
   border: none;
   padding: 8px 15px;
   border-radius: 4px;
   cursor: pointer;
+}
+
+.text-submit-btn:hover {
+  background:#69A6CE;
 }
 
 .case-header {
