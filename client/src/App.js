@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { extractTextFromPDF } from './utils/pdfParser';
-import { findCaseNames } from './utils/caseMatcher';
+import { findCaseNamesOne, findCaseNamesTwo } from './utils/caseMatcher';
 import './styles.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
@@ -155,7 +155,7 @@ function App() {
       }
       
       setInfo('Identifying legal cases...');
-      const foundCases = findCaseNames(text);
+      const foundCases = findCaseNamesTwo(text);
       
       if (foundCases.length === 0) {
         setInfo('No legal case citations found in the document');
