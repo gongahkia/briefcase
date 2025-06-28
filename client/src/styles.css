@@ -524,10 +524,6 @@ body {
   border-radius: 3px;
 }
 
-.case-select input:checked ~ .checkmark {
-  background: #2980b9;
-}
-
 .checkmark:after {
   content: "";
   position: absolute;
@@ -541,10 +537,6 @@ body {
   transform: rotate(45deg);
 }
 
-.case-select input:checked ~ .checkmark:after {
-  display: block;
-}
-
 .api-instructions {
   background: #e8f4f8;
   padding: 10px;
@@ -556,39 +548,4 @@ body {
 .api-instructions a {
   color: var(--secondary);
   text-decoration: underline;
-}
-
-.case-select input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  accent-color: #2980b9;
-  cursor: pointer;
-  /* fallback for browsers without accent-color */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  border: 2px solid #2980b9;
-  border-radius: 4px;
-  background: white;
-  position: relative;
-  vertical-align: middle;
-  outline: none;
-  display: inline-block;
-}
-
-.case-select input[type="checkbox"]:checked {
-  background: #2980b9;
-  border-color: #2980b9;
-}
-
-.case-select input[type="checkbox"]:checked::after {
-  content: '✔';
-  color: white;
-  position: absolute;
-  left: 2px;
-  top: -2px;
-  font-size: 14px;
-  line-height: 18px;
-  pointer-events: none;
 }
