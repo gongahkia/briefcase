@@ -7,7 +7,6 @@ const commonliiScraper = require('../scrapers/commonlii');
 const singaporeCourtsScraper = require('../scrapers/singaporeCourts');
 const ogpScraper = require('../scrapers/ogp');
 const slwScraper = require('../scrapers/slw');
-const judiciarySgScraper = require('../scrapers/judiciarySg');
 const vlexScraper = require('../scrapers/vlex');
 
 // Available search sources
@@ -35,11 +34,6 @@ const SEARCH_SOURCES = {
   'slw': {
     name: 'Singapore Law Watch',
     scraper: slwScraper,
-    requiresAuth: false
-  },
-  'judiciary-sg': {
-    name: 'Singapore Judiciary',
-    scraper: judiciarySgScraper,
     requiresAuth: false
   },
   'vlex': {
