@@ -6,7 +6,6 @@ import './styles.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-// FUA to add more sources
 const SEARCH_SOURCES = [
   { id: 'lawnet', name: 'LawNet API', requiresAuth: true, description: 'Official LawNet database (requires API key)' },
   { id: 'commonlii', name: 'CommonLII', requiresAuth: false, description: 'Free Singapore cases from 2006+' },
@@ -48,7 +47,10 @@ function App() {
   const [showSourceDialog, setShowSourceDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [configFromStorage, setConfigFromStorage] = useLocalStorage('briefcase_config', {});
+  const [fileProcessed, setFileProcessed] = useState(false);
+  const [fileType, setFileType] = useState('');
 
   useEffect(() => {
     checkServerConfig();
@@ -119,30 +121,45 @@ function App() {
   const onDrop = async (acceptedFiles) => {
     setLoading(true);
     setError('');
-    setCases([]); 
-    setSearchResults([]); 
+    setInfo('');
+    setCases([]);
+    setSearchResults([]);
+    setFileProcessed(false);
     
     const file = acceptedFiles[0];
     
     try {
+      if (!file) {
+        throw new Error('No file selected');
+      }
+      
       console.log('Processing file:', file.name);
+      setInfo(`Processing ${file.name}...`);
+      setFileType(file.type);
+      
       let text = '';
       
       if (file.type === 'application/pdf') {
-        console.log('Extracting text from PDF...');
+        setInfo('Extracting text from PDF...');
         text = await extractTextFromPDF(file);
       } else if (file.type === 'text/plain') {
-        console.log('Reading text file...');
+        setInfo('Reading text file...');
         text = await file.text();
       } else {
-        throw new Error('Unsupported file type');
+        throw new Error('Unsupported file type. Please upload PDF or TXT files.');
       }
       
-      console.log('Text extracted. Length:', text.length);
+      setInfo('Identifying legal cases...');
       const foundCases = findCaseNames(text);
-      console.log('Identified cases:', foundCases);
+      
+      if (foundCases.length === 0) {
+        setInfo('No legal case citations found in the document');
+      } else {
+        setInfo(`Found ${foundCases.length} case citation(s) in the document`);
+      }
       
       setCases(foundCases);
+      setFileProcessed(true);
       
     } catch (error) {
       console.error('File processing error:', error);
@@ -158,7 +175,18 @@ function App() {
       'application/pdf': ['.pdf'],
       'text/plain': ['.txt']
     },
-    maxFiles: 1
+    maxFiles: 1,
+    maxSize: 10 * 1024 * 1024, // 10MB
+    onDropRejected: (rejectedFiles) => {
+      const file = rejectedFiles[0];
+      if (file) {
+        if (file.size > 10 * 1024 * 1024) {
+          setError('File is too large. Maximum size is 10MB');
+        } else {
+          setError(`Unsupported file type: ${file.type || file.name.split('.').pop()}`);
+        }
+      }
+    }
   });
 
   const searchCases = async (caseName) => {
@@ -171,6 +199,7 @@ function App() {
 
     setLoading(true);
     setError('');
+    setInfo(`Searching ${currentSource.name} for: ${caseName}`);
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/cases/search`, {
@@ -189,6 +218,13 @@ function App() {
       }
 
       const data = await response.json();
+      const resultCount = data.results?.length || 0;
+      
+      if (resultCount === 0) {
+        setInfo(`No results found for "${caseName}" in ${currentSource.name}`);
+      } else {
+        setInfo(`Found ${resultCount} result(s) for "${caseName}" in ${currentSource.name}`);
+      }
 
       setSearchResults(prev => [
         ...prev.filter(r => r.searchTerm !== caseName),
@@ -210,7 +246,8 @@ function App() {
   const handleSourceChange = (sourceId) => {
     setSelectedSource(sourceId);
     setShowSourceDialog(false);
-    setSearchResults([]); // Clear previous results when switching sources
+    setSearchResults([]);
+    setInfo(`Search source changed to: ${SEARCH_SOURCES.find(s => s.id === sourceId)?.name}`);
   };
 
   const getCurrentSource = () => SEARCH_SOURCES.find(s => s.id === selectedSource);
@@ -218,7 +255,7 @@ function App() {
   return (
     <div className="app-container">
       <header>
-        <h1><i className="fas fa-briefcase"></i> Briefcase Client</h1>
+        <h1><i className="fas fa-briefcase"></i> Briefcase</h1>
         <div className="header-controls">
           <div className="source-selector">
             <button onClick={() => setShowSourceDialog(true)} className="source-btn">
@@ -241,7 +278,7 @@ function App() {
               )}
             </div>
           )}
-
+          
           {getCurrentSource()?.requiresAuth && (
             apiKey ? (
               <div className="api-status">
@@ -269,10 +306,28 @@ function App() {
           <input {...getInputProps()} />
           <i className="fas fa-cloud-upload-alt fa-3x"></i>
           <p>{isDragActive ? 'Drop file here' : 'Drag PDF/TXT file or click to browse'}</p>
+          <p className="file-requirements">Max size: 10MB • Supported: PDF, TXT</p>
         </div>
 
         {loading && <div className="loader"><i className="fas fa-spinner fa-spin"></i> Processing...</div>}
-        {error && <div className="error-message"><i className="fas fa-exclamation-triangle"></i> {error}</div>}
+        
+        {error && (
+          <div className="error-message">
+            <i className="fas fa-exclamation-triangle"></i> {error}
+          </div>
+        )}
+        
+        {info && !error && (
+          <div className="info-message">
+            <i className="fas fa-info-circle"></i> {info}
+          </div>
+        )}
+
+        {fileProcessed && cases.length === 0 && !loading && (
+          <div className="no-cases-message">
+            <i className="fas fa-search-minus"></i> No legal case citations found in the document.
+          </div>
+        )}
 
         {cases.length > 0 && (
           <div className="results-section">
@@ -315,7 +370,9 @@ function App() {
                     ))}
                   </div>
                 ) : (
-                  <p className="no-results">No results found for this case.</p>
+                  <p className="no-results">
+                    <i className="fas fa-exclamation-circle"></i> No results found for this case
+                  </p>
                 )}
               </div>
             ))}
@@ -387,7 +444,7 @@ function SourceSelectionDialog({ sources, currentSource, onSelect, onClose }) {
   );
 }
 
-// Configuration Dialog Component (unchanged)
+// Configuration Dialog Component
 function ConfigurationDialog({ onSubmit, onClose, initialConfig = {} }) {
   const [config, setConfig] = useState({
     LAWNET_CLIENT_ID: initialConfig.LAWNET_CLIENT_ID || '',
@@ -493,7 +550,7 @@ function ConfigurationDialog({ onSubmit, onClose, initialConfig = {} }) {
   );
 }
 
-// API Key Dialog Component (unchanged)
+// API Key Dialog Component
 function ApiKeyDialog({ onSubmit, onClose }) {
   const [key, setKey] = useState('');
 
