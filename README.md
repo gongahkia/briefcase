@@ -25,6 +25,7 @@ Web App that [brief](https://dictionary.cambridge.org/dictionary/english/brief)s
 
 * *Frontend*: [React](https://react.dev/), [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript), [Vercel](https://vercel.com/)
 * *Backend*: [Node.js](https://nodejs.org/en), [Express.js](https://expressjs.com/)
+* *Cache*: [Redis](https://redis.io/), [Web Storage API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API)
 * *Scrapers*: [Axios](https://axios-http.com/docs/intro), [Cheerio](https://cheerio.js.org/)
 * *Package*: [Docker](https://www.docker.com/)
 * *Web Server*: [Nginx](https://nginx.org/)
@@ -143,7 +144,7 @@ REACT_APP_API_URL=http://localhost:3001
 
 ### Overview
 
-![]()
+![](./asset/reference/architecture.png)
 
 ### User Sequence
 
