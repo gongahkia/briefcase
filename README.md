@@ -1,5 +1,8 @@
 [![](https://img.shields.io/badge/briefcase_1.0.0-passing-dark_green)](https://github.com/gongahkia/briefcase/releases/tag/1.0.0) 
 ![](https://img.shields.io/badge/briefcase_1.0.0-deployment_down-orange) 
+![](https://github.com/gongahkia/briefcase/actions/workflows/ci.yml/badge.svg)
+![](https://github.com/gongahkia/briefcase/actions/workflows/cd.yml/badge.svg)
+![](https://github.com/gongahkia/briefcase/actions/workflows/scraper-maintenance.yml/badge.svg)
 
 > [!WARNING]  
 > [`BriefCase`](https://github.com/gongahkia/sagasu-2/tree/main?tab=readme-ov-file)'s Vercel and Github actions are inactive as of 29 June 2025 due to recent **dynamic anti-scraping mechanisms** that bypass rotating proxies and user-agent spoofing, causing consistent 403 Forbidden errors across all [scrapers](#sources).
