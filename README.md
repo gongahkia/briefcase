@@ -2,16 +2,16 @@
 ![](https://img.shields.io/badge/briefcase_1.0.0-deployment_down-orange) 
 
 > [!WARNING]  
-> [`BriefCase`](https://github.com/gongahkia/sagasu-2/tree/main?tab=readme-ov-file)'s Vercel and Github actions are inactive as of 29 June 2025 due to a **bug** involving ... that breaks the scraper.
+> [`BriefCase`](https://github.com/gongahkia/sagasu-2/tree/main?tab=readme-ov-file)'s Vercel and Github actions are inactive as of 29 June 2025 due to recent **dynamic anti-scraping mechanisms** that bypass rotating proxies and user-agent spoofing, causing consistent 403 Forbidden errors across all [scrapers](#sources).
 >  
 > The issue is further documented here.
 >  
-> * []()
-> * []()
-> * []()
-> * []()
-> * []()
-> * []()
+> * [*ScraperAPI: HTTP 403 Forbidden Solutions*](https://www.scraperapi.com/blog/web-scraping-errors/)
+> * [*DataHen: Common Web Scraping Errors*](https://www.datahen.com/blog/web-scraping-errors/)
+> * [*Web Scraper Forum: Real-World Blocking Cases*](https://forum.webscraper.io/c/bug-reports/5)
+> * [*Axiom.ai: Modern Anti-Bot Challenges*](https://axiom.ai/blog/5-problems-webscrapers)
+> * [*ScrapeHero: CI/CD for Scraping*](https://www.scrapehero.com/web-scraping-in-a-ci-cd-pipeline/)
+> * [*DataDome: Legal Scraping Boundaries*](https://datadome.co/guides/scraping/is-it-legal/)
 
 # `BriefCase`
 
