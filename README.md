@@ -30,6 +30,7 @@ Web App that [brief](https://dictionary.cambridge.org/dictionary/english/brief)s
 * *Package*: [Docker](https://www.docker.com/)
 * *Web Server*: [Nginx](https://nginx.org/)
 * *Schedule*: [Nodemon](https://www.npmjs.com/package/nodemon)
+* *CI/CD*: [Github Actions](https://docs.github.com/en/actions/how-tos/writing-workflows)
 
 ## Screenshot
 
