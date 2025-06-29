@@ -5,7 +5,7 @@
 ![](https://github.com/gongahkia/briefcase/actions/workflows/scraper-maintenance.yml/badge.svg)
 
 > [!WARNING]  
-> [`BriefCase`](https://github.com/gongahkia/sagasu-2/tree/main?tab=readme-ov-file)'s Vercel and Github actions are inactive as of 29 June 2025 due to recent **dynamic anti-scraping mechanisms** that bypass rotating proxies and user-agent spoofing, causing consistent 403 Forbidden errors across all [scrapers](#sources).
+> [`BriefCase`](https://github.com/gongahkia/briefcase/tree/main?tab=readme-ov-file)'s Vercel and Github actions are inactive as of 29 June 2025 due to recent **dynamic anti-scraping mechanisms** that bypass rotating proxies and user-agent spoofing, causing consistent 403 Forbidden errors across all [scrapers](#sources).
 >  
 > The issue is further documented here.
 >  
