@@ -204,4 +204,60 @@ sequenceDiagram
 
 ## Legal Disclaimer
 
-...
+### For Informational Purposes Only
+
+The information provided by Briefcase is intended solely for general informational purposes. While every effort is made to ensure the accuracy and reliability of the legal case information and search results presented, Briefcase makes no guarantees, representations, or warranties of any kind, express or implied, about the completeness, accuracy, reliability, suitability, or availability of the information. Users should independently verify any legal information before making decisions based on it.
+
+### No Legal Advice
+
+Briefcase does not provide professional legal advice, consultation, or representation. The case information and search results obtained through Briefcase should not be considered a substitute for professional advice from qualified legal practitioners or attorneys. Users are strongly encouraged to consult with appropriate legal professionals regarding their specific legal matters and requirements.
+
+### No Endorsement
+
+The inclusion of any legal databases, sources, or third-party content within Briefcase does not constitute an endorsement or recommendation of those sources or their content. Briefcase is not affiliated with any external content providers unless explicitly stated.
+
+### Third-Party Content
+
+Briefcase aggregates and displays information sourced from various third-party legal databases and websites. Briefcase does not control, monitor, or guarantee the accuracy or reliability of such third-party content. Use of information obtained from these sources is at the user’s own risk, and Briefcase disclaims all liability for any content, claims, or damages resulting from their use.
+
+### Use at Your Own Risk
+
+Users access, use, and rely on Briefcase and its search results at their own risk. Legal information may become outdated or inaccurate without notice, and legal landscapes may change rapidly. Briefcase disclaims all liability for any loss, injury, or damage, direct or indirect, arising from reliance on the information provided. This includes but is not limited to legal misinformation, outdated legal precedents, incorrect interpretations, or decisions made based on the content displayed.
+
+### Limitation of Liability
+
+To the fullest extent permitted by law:
+
+* Briefcase shall not be liable for any direct, indirect, incidental, consequential, or punitive damages arising out of your use of the application or reliance on any legal information or search results.
+* Briefcase disclaims all liability for errors or omissions in the content provided.
+* Our total liability under any circumstances shall not exceed the amount paid by you (if any) for using Briefcase.
+
+### User Responsibility
+
+Users are solely responsible for:
+
+* Verifying the accuracy and currency of any legal information obtained through Briefcase.
+* Seeking appropriate professional legal advice for their specific circumstances.
+* Complying with all applicable laws, regulations, and professional conduct rules.
+* Understanding that legal case information and search results are not substitutes for formal legal counsel.
+* Exercising independent judgment when interpreting legal information and developments.
+
+### Copyright and Intellectual Property
+
+Briefcase respects intellectual property rights and makes efforts to only display publicly available information. If you believe your copyrighted work has been inappropriately used or displayed by Briefcase, please contact the creator to request its removal.
+
+### Data Collection and Privacy
+
+Briefcase may collect user data to improve service functionality. By using Briefcase, you consent to data collection practices as outlined in our separate Privacy Policy.
+
+### Changes to Content
+
+Briefcase reserves the right to modify, update, or remove any content on this platform at any time without prior notice. Legal databases, sources, and search results may change without notice due to various factors including changes in source availability or content quality.
+
+### Jurisdiction
+
+This disclaimer and your use of Briefcase shall be governed by and construed in accordance with the laws of Singapore. Any disputes arising out of or in connection with this disclaimer shall be subject to the exclusive jurisdiction of the courts in Singapore.
+
+### Contact
+
+This project is created and maintained by Gabriel Ong. Please contact him at [gabrielzmong@gmail.com](mailto:gabrielzmong@gmail.com).
