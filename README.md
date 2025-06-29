@@ -74,6 +74,9 @@ Web App that [brief](https://dictionary.cambridge.org/dictionary/english/brief)s
 
 ## Usage
 
+> [!IMPORTANT]
+> Read the [legal disclaimer](#legal-disclaimer) before using `BriefCase`.
+
 1. The below instructions are for locally hosting `BriefCase`.
 
 ```console
