@@ -2,9 +2,7 @@
 ![](https://img.shields.io/badge/briefcase_1.0.0-deployment_down-orange) 
 
 > [!WARNING]  
-> [`BriefCase`](https://github.com/gongahkia/sagasu-2/tree/main?tab=readme-ov-file)'s Vercel and Github actions are inactive as of 29 June 2025 due to ...
-> 
-> a **bug** involving Microsoft Account Redirect Loops that break the scraper.
+> [`BriefCase`](https://github.com/gongahkia/sagasu-2/tree/main?tab=readme-ov-file)'s Vercel and Github actions are inactive as of 29 June 2025 due to a **bug** involving ... that breaks the scraper.
 >  
 > The issue is further documented here.
 >  
@@ -132,17 +130,18 @@ CHOKIDAR_USEPOLLING=true
 REACT_APP_API_URL=http://localhost:3001
 ```
 
+## Sources
+
+* [LawNet API](https://github.com/kengwoon/LawNet-APIs)
+* [CommonLII](https://www.commonlii.org/sg/)
+* [Singapore Courts](https://www.judiciary.gov.sg/)
+* [OGP Pair Search](https://search.pair.gov.sg/)
+* [Singapore Law Watch](https://www.singaporelawwatch.sg/)
+* [vLex](https://vlex.com/)
+
 ## Architecture
 
 ### Overview
-
-![]()
-
-### Frontend
-
-![]()
-
-### Backend
 
 ![]()
 
@@ -193,14 +192,103 @@ sequenceDiagram
     Frontend->>Sources: Direct navigation (new tab)
 ```
 
-## Sources
+### Frontend
 
-* [LawNet API](https://github.com/kengwoon/LawNet-APIs)
-* [CommonLII](https://www.commonlii.org/sg/)
-* [Singapore Courts](https://www.judiciary.gov.sg/)
-* [OGP Pair Search](https://search.pair.gov.sg/)
-* [Singapore Law Watch](https://www.singaporelawwatch.sg/)
-* [vLex](https://vlex.com/)
+```mermaid
+flowchart TD
+    A[User] -->|Uploads PDF/TXT| B[File Dropzone]
+    A -->|Pastes Text| C[Text Analysis Area]
+    B --> D[PDF.js Extraction]
+    C --> D
+    D --> E[CaseMatcher.js]
+    E -->|Identified Cases| F[IdentifiedCases Component]
+    F -->|User Selects Cases| G[Source Selection]
+    G -->|LawNet| H[API Key Dialog]
+    G -->|Other Sources| I[Search Execution]
+    H --> I
+    I -->|Search Request| J[Backend API]
+    J -->|Results| K[SearchResults Display]
+    K -->|Click Case| L[Open Source Site]
+    
+    subgraph Frontend React App
+        B --> D
+        C --> D
+        D --> E
+        E --> F
+        F --> G
+        G --> H
+        G --> I
+        I --> J
+        J --> K
+        K --> L
+    end
+    
+    style A fill:#f9f,stroke:#333
+    style B fill:#eef,stroke:#999
+    style C fill:#eef,stroke:#999
+    style D fill:#cff,stroke:#099
+    style E fill:#cff,stroke:#099
+    style F fill:#ffc,stroke:#990
+    style G fill:#fcf,stroke:#909
+    style H fill:#fcc,stroke:#900
+    style I fill:#cfc,stroke:#090
+    style J fill:#ddf,stroke:#339
+    style K fill:#dfd,stroke:#393
+    style L fill:#fdf,stroke:#939
+```
+
+### Backend
+
+```mermaid
+flowchart TD
+    A[Frontend Request] --> B[Express Router]
+    B -->|POST /api/cases/search| C[Search Controller]
+    C --> D{Source Type?}
+    D -->|LawNet| E[LawNet API Scraper]
+    D -->|CommonLII| F[CommonLII HTML Scraper]
+    D -->|Singapore Courts| G[SG Courts Scraper]
+    D -->|SLW| H[SLW Scraper]
+    D -->|Judiciary SG| I[Judiciary SG Scraper]
+    D -->|vLex| J[vLex API]
+    
+    subgraph Scrapers & APIs
+        E --> K[Format Results]
+        F --> K
+        G --> K
+        H --> K
+        I --> K
+        J --> K
+    end
+    
+    K --> L[Send Structured Data]
+    L --> M[Frontend]
+    
+    B -->|Auth Routes| N[Auth Controller]
+    N --> O[Token Handling]
+    N --> P[User Verification]
+    
+    B -->|Config Routes| Q[Config Controller]
+    Q --> R[Env/Dynamic Config]
+    
+    style A fill:#f9f,stroke:#333
+    style B fill:#ddf,stroke:#339
+    style C fill:#cff,stroke:#099
+    style D fill:#ffc,stroke:#990
+    style E fill:#fcc,stroke:#900
+    style F fill:#cfc,stroke:#090
+    style G fill:#cfc,stroke:#090
+    style H fill:#cfc,stroke:#090
+    style I fill:#cfc,stroke:#090
+    style J fill:#fcc,stroke:#900
+    style K fill:#dfd,stroke:#393
+    style L fill:#dfd,stroke:#393
+    style M fill:#f9f,stroke:#333
+    style N fill:#fcf,stroke:#909
+    style O fill:#fcf,stroke:#909
+    style P fill:#fcf,stroke:#909
+    style Q fill:#cff,stroke:#099
+    style R fill:#cff,stroke:#099
+```
 
 ## Legal Disclaimer
 
