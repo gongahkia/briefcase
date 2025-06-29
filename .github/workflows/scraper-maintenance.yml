@@ -1,0 +1,33 @@
+name: Scraper Maintenance
+on:
+  workflow_dispatch:
+
+jobs:
+  scraper-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Start services
+        run: docker-compose -f docker-compose.dev.yml up -d
+      
+      - name: Run scraper health checks
+        run: |
+          docker-compose -f docker-compose.dev.yml exec server node scripts/scraperHealth.js
+      
+      - name: Update scraper configurations
+        run: |
+          docker-compose -f docker-compose.dev.yml exec server node scripts/updateScrapers.js
+      
+      - name: Rotate proxy configurations
+        uses: ethomson/setup-proxy@v1
+        with:
+          proxy: ${{ secrets.PROXY_SERVICE }}
+          rotate: true
+      
+      - name: Notify on failure
+        if: ${{ failure() }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
