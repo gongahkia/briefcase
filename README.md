@@ -97,10 +97,9 @@ $ docker-compose -f docker-compose.dev.yml up -d --build
 ```
 
 4. Access the below at their corresponding endpoints.
-
-* *Frontend*: [`http://localhost:3000`](http://localhost:3000/)
-* *Backend API*: [`http://localhost:3001`](http://localhost:3001/)
-* *Health Check*: [`http://localhost:3001/health`](http://localhost:3001/health)
+    1. *Frontend*: [`http://localhost:3000`](http://localhost:3000/)
+    2. *Backend API*: [`http://localhost:3001`](http://localhost:3001/)
+    3. *Health Check*: [`http://localhost:3001/health`](http://localhost:3001/health)
 
 5. While `BriefCase` provides a [GUI](#screenshot) for configuring your [LawNet]() and [VLex]() API credentials, which are encrypted before being cached to Local Browser Storage via the [Web Storage API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API). However, you can also choose to specify them within the respective `./server/.env` and `./client./env` files as below.
 
